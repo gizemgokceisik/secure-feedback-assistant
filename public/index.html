@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Feedback Assistant</title>
+  <style>
+    :root {
+      --bg: #0f172a;          /* slate-900 */
+      --panel: #111827;       /* gray-900 */
+      --panel-2: #0b1220;     /* darker */
+      --muted: #9ca3af;       /* gray-400 */
+      --text: #e5e7eb;        /* gray-200 */
+      --primary: #60a5fa;     /* blue-400 */
+      --primary-2: #3b82f6;   /* blue-500 */
+      --accent: #22d3ee;      /* cyan-400 */
+      --danger: #ef4444;      /* red-500 */
+      --ok: #10b981;          /* emerald-500 */
+      --warn: #f59e0b;        /* amber-500 */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 100% -10%, rgba(34,211,238,0.08), transparent),
+                  radial-gradient(1000px 700px at -10% 10%, rgba(96,165,250,0.10), transparent),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 24px 20px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: grid; place-items: center;
+      box-shadow: var(--shadow);
+    }
+    .logo svg { fill: white; opacity: .95; }
+    .title h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+    .title p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+
+    .wrap {
+      padding: 12px 20px 24px;
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 16px;
+    }
+    @media (max-width: 980px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), var(--panel);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* Chat panel */
+    .chat {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 540px;
+    }
+    .chat-head { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .chat-head h2 { margin: 0; font-size: 16px; }
+
+    .chat-body {
+      padding: 16px;
+      overflow: auto;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
+    }
+    .msg { max-width: 88%; padding: 12px 14px; border-radius: 14px; line-height: 1.35; }
+    .msg.user { align-self: flex-end; background: #1f2937; border: 1px solid rgba(255,255,255,0.06); }
+    .msg.bot  { align-self: flex-start; background: #0b1730; border: 1px solid rgba(96,165,250,0.25); }
+    .msg small { display: block; color: var(--muted); margin-top: 6px; font-size: 11px; }
+
+    .chat-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+
+    textarea {
+      width: 100%; min-height: 56px; resize: vertical; max-height: 220px;
+      background: var(--panel-2); color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 12px 12px 36px 12px; outline: none;
+    }
+    textarea:focus { border-color: rgba(96,165,250,0.5); box-shadow: 0 0 0 3px rgba(96,165,250,0.2); }
+
+    .controls { display:flex; gap:10px; align-items:center; margin-top:-32px; padding-left:6px; }
+    .select, .btn {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 8px 10px; height: 36px;
+      background: #0c1426; color: var(--text);
+    }
+    .select { min-width: 120px; }
+
+    .btn.primary { background: linear-gradient(135deg, var(--primary-2), var(--accent)); border: none; color: white; font-weight: 600; }
+    .btn.secondary { background: #111b31; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .send { display:flex; align-items:center; gap:8px; padding: 10px 14px; }
+    .send svg { width: 16px; height:16px; fill: currentColor; }
+
+    /* Inspector */
+    .inspector { padding: 14px; display: grid; gap: 12px; }
+    .section h3 { margin: 0 0 8px; font-size: 14px; color: #cbd5e1; }
+    .pill {
+      display:inline-flex; align-items:center; gap:8px; padding:6px 10px;
+      border-radius:999px; font-size:12px; border: 1px solid rgba(255,255,255,0.1);
+      background:#0c1426;
+    }
+
+    .bars { display:grid; gap:8px; }
+    .bar { background:#0c1426; border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; }
+    .bar > div { height: 12px; background: linear-gradient(90deg, var(--accent), var(--primary)); width: 0%; transition: width .3s ease; }
+    .bar-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:4px; }
+
+    .tips { display:grid; gap:8px; }
+    .tip {
+      padding:10px 12px; border-radius:10px; background:#0c1426; border:1px solid rgba(255,255,255,0.08); font-size:13px;
+    }
+
+    .toast {
+      position: fixed; right: 16px; bottom: 16px; background:#111b31; color: var(--text);
+      border:1px solid rgba(255,255,255,0.12); padding:10px 12px; border-radius:12px; box-shadow: var(--shadow);
+      display:none; font-size:13px;
+    }
+    .toast.show { display:block; }
+
+    .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2l3.5 6.5L22 9l-5 4.9L18.5 21 12 17.8 5.5 21 7 13.9 2 9l6.5-.5L12 2z"/></svg>
+    </div>
+    <div class="title">
+      <h1>Secure Feedback Assistant</h1>
+      <p>Sentiment-aware chat using Azure Language + Azure OpenAI</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Chat panel -->
+    <section class="card chat" aria-label="Chat panel">
+      <div class="chat-head">
+        <h2>Conversation</h2>
+      </div>
+      <div id="chat" class="chat-body" aria-live="polite" aria-busy="false"></div>
+      <div class="chat-foot">
+        <div class="composer">
+          <div>
+            <label for="msg" class="sr-only">Message</label>
+            <textarea id="msg" placeholder="Type your message… (Shift+Enter = new line)"></textarea>
+            <div class="controls">
+              <select id="lang" class="select" aria-label="Reply language">
+                <option value="en" selected>Reply in English</option>
+                <option value="tr">Reply in Turkish</option>
+              </select>
+              <button id="analyzeBtn" class="btn secondary" title="Analyze sentiment only">Analyze</button>
+            </div>
+          </div>
+          <button id="sendBtn" class="btn primary send" title="Send message">
+            <span id="sendText">Send</span>
+            <span id="sendIcon"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></span>
+            <span id="sendSpin" class="spinner" style="display:none"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inspector -->
+    <aside class="card inspector" aria-label="Inspector">
+      <div class="section">
+        <h3>Latest sentiment</h3>
+        <div id="sentimentPill" class="pill">No analysis yet</div>
+      </div>
+      <div class="section">
+        <h3>Confidence</h3>
+        <div class="bar-label"><span>Positive</span><span id="posVal">0%</span></div>
+        <div class="bar"><div id="posBar"></div></div>
+        <div class="bar-label"><span>Neutral</span><span id="neuVal">0%</span></div>
+        <div class="bar"><div id="neuBar"></div></div>
+        <div class="bar-label"><span>Negative</span><span id="negVal">0%</span></div>
+        <div class="bar"><div id="negBar"></div></div>
+      </div>
+      <div class="section">
+        <h3>Assistant tips</h3>
+        <div id="tips" class="tips">
+          <div class="tip">Tips from the assistant will appear here after you send a message.</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="alert">Error</div>
+
+  <script>
+    const chatEl = document.getElementById('chat');
+    const msgEl = document.getElementById('msg');
+    const sendBtn = document.getElementById('sendBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const sendText = document.getElementById('sendText');
+    const sendIcon = document.getElementById('sendIcon');
+    const sendSpin = document.getElementById('sendSpin');
+    const langEl = document.getElementById('lang');
+
+    const pill = document.getElementById('sentimentPill');
+    const posBar = document.getElementById('posBar');
+    const neuBar = document.getElementById('neuBar');
+    const negBar = document.getElementById('negBar');
+    const posVal = document.getElementById('posVal');
+    const neuVal = document.getElementById('neuVal');
+    const negVal = document.getElementById('negVal');
+    const tipsEl = document.getElementById('tips');
+    const toast = document.getElementById('toast');
+
+    function addMsg(role, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerHTML = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br/>');
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return div;
+    }
+
+    function setBusy(b) {
+      chatEl.setAttribute('aria-busy', b ? 'true' : 'false');
+      sendBtn.disabled = b;
+      analyzeBtn.disabled = b;
+      sendText.style.display = b ? 'none' : 'inline';
+      sendIcon.style.display = b ? 'none' : 'inline';
+      sendSpin.style.display = b ? 'inline-block' : 'none';
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function formatPct(x) { return Math.round((x||0) * 100); }
+
+    function updateSentimentUI(label, scores) {
+  const lower = (label || 'unknown').toLowerCase();
+  pill.textContent = label || 'unknown';
+
+  // Default border color
+  pill.style.borderColor = 'rgba(255,255,255,0.12)';
+
+  // Border color by sentiment
+  if (lower === 'positive') pill.style.borderColor = 'rgba(16,185,129,.5)'; // green
+  if (lower === 'negative') pill.style.borderColor = 'rgba(239,68,68,.5)';  // red
+  if (lower === 'neutral')  pill.style.borderColor = 'rgba(245,158,11,.5)'; // amber
+
+  const p = Math.round((scores?.positive || 0) * 100);
+  const n = Math.round((scores?.neutral  || 0) * 100);
+  const g = Math.round((scores?.negative || 0) * 100);
+
+  posBar.style.width = p + '%'; posVal.textContent = p + '%';
+  neuBar.style.width = n + '%'; neuVal.textContent = n + '%';
+  negBar.style.width = g + '%'; negVal.textContent = g + '%';
+}
+
+
+    async function callAnalyze(text) {
+      const r = await fetch('/analyze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (!r.ok) throw new Error('Analyze failed: ' + r.status);
+      const data = await r.json();
+      const doc = data?.result?.results?.documents?.[0];
+      const label = doc?.sentiment || 'unknown';
+      const scores = doc?.confidenceScores || {};
+      updateSentimentUI(label, scores);
+      return { label, scores };
+    }
+
+    async function callChat(message, replyLang, senti) {
+      const r = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, replyLang })
+      });
+      if (!r.ok) throw new Error('Chat failed: ' + r.status);
+      const data = await r.json();
+      // Prefer server-provided sentiment if present
+      const s = data?.sentiment || senti || { sentiment: 'unknown', scores: {} };
+      updateSentimentUI(s.sentiment, s.scores);
+      return data?.reply || { answer: '(no answer)', tips: [] };
+    }
+
+    async function onSend() {
+      const text = msgEl.value.trim();
+      if (!text) { msgEl.focus(); return; }
+      const replyLang = langEl.value || 'en';
+      const userBubble = addMsg('user', text);
+      msgEl.value = '';
+
+      const botBubble = addMsg('bot', '…');
+      setBusy(true);
+      try {
+        // Optionally pre-analyze here to update inspector faster
+        let senti;
+        try { senti = await callAnalyze(text); } catch (_) {}
+        const reply = await callChat(text, replyLang, senti);
+        botBubble.innerHTML = (reply.answer || '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br/>');
+        // tips
+        tipsEl.innerHTML = '';
+        (reply.tips || []).forEach(t => {
+          const d = document.createElement('div');
+          d.className = 'tip';
+          d.textContent = t;
+          tipsEl.appendChild(d);
+        });
+        if (!reply.tips || reply.tips.length === 0) {
+          const d = document.createElement('div');
+          d.className = 'tip';
+          d.textContent = 'No tips for this message.';
+          tipsEl.appendChild(d);
+        }
+      } catch (e) {
+        console.error(e);
+        botBubble.textContent = 'Sorry—an error occurred.';
+        showToast(e.message || 'Request failed');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function onAnalyzeOnly() {
+      const text = msgEl.value.trim();
+      if (!text) { msgEl.focus(); return; }
+      setBusy(true);
+      try { await callAnalyze(text); } catch (e) { showToast(e.message || 'Analyze failed'); }
+      finally { setBusy(false); }
+    }
+
+    // Keyboard: Enter to send, Shift+Enter new line
+    msgEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); onSend();
+      }
+    });
+
+    sendBtn.addEventListener('click', onSend);
+    analyzeBtn.addEventListener('click', onAnalyzeOnly);
+
+    // Seed a greeting
+    addMsg('bot', 'Hello! I can analyze the sentiment of your message and offer suggestions.');
+  </script>
+</body>
+</html>
