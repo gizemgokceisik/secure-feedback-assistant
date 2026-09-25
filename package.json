@@ -1,0 +1,22 @@
+{
+  "name": "secure-feedback-assistant",
+  "version": "1.0.0",
+  "description": "Sentiment-aware feedback chat assistant built with Express, Azure AI Language and Azure OpenAI.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["azure", "azure-openai", "sentiment-analysis", "express", "nodejs", "chatbot"],
+  "author": "Gizem Gökçe Işık",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0"
+  }
+}
